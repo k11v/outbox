@@ -33,10 +33,10 @@ const (
 
 type config struct {
 	Mode   string
-	Server *server.Config
+	Server server.Config
 }
 
-func parseConfig(getenv func(string) string) (*config, error) {
+func parseConfig(getenv func(string) string) (config, error) {
 	var err error
 
 	mode := defaultMode
@@ -45,22 +45,22 @@ func parseConfig(getenv func(string) string) (*config, error) {
 		switch mode {
 		case modeDevelopment, modeProduction:
 		default:
-			return nil, errors.New("invalid mode")
+			return config{}, errors.New("invalid mode")
 		}
 	}
 
 	serverCfg, err := parseServerConfig(getenv)
 	if err != nil {
-		return nil, err
+		return config{}, err
 	}
 
-	return &config{
+	return config{
 		Mode:   mode,
 		Server: serverCfg,
 	}, nil
 }
 
-func parseServerConfig(getenv func(string) string) (*server.Config, error) {
+func parseServerConfig(getenv func(string) string) (server.Config, error) {
 	var err error
 
 	host := defaultServerHost
@@ -72,7 +72,7 @@ func parseServerConfig(getenv func(string) string) (*server.Config, error) {
 	if getenv(serverPortKey) != "" {
 		port, err = strconv.Atoi(getenv(serverPortKey))
 		if err != nil {
-			return nil, errors.Join(errors.New("invalid server port"), err)
+			return server.Config{}, errors.Join(errors.New("invalid server port"), err)
 		}
 	}
 
@@ -80,16 +80,16 @@ func parseServerConfig(getenv func(string) string) (*server.Config, error) {
 	if getenv(serverReadHeaderTimeoutKey) != "" {
 		readHeaderTimeout, err = time.ParseDuration(getenv(serverReadHeaderTimeoutKey))
 		if err != nil {
-			return nil, errors.Join(errors.New("invalid server read header timeout"), err)
+			return server.Config{}, errors.Join(errors.New("invalid server read header timeout"), err)
 		}
 	}
 
 	tlsCfg, err := parseServerTLSConfig(getenv)
 	if err != nil {
-		return nil, err
+		return server.Config{}, err
 	}
 
-	return &server.Config{
+	return server.Config{
 		Host:              host,
 		Port:              port,
 		ReadHeaderTimeout: readHeaderTimeout,
@@ -97,14 +97,14 @@ func parseServerConfig(getenv func(string) string) (*server.Config, error) {
 	}, nil
 }
 
-func parseServerTLSConfig(getenv func(string) string) (*server.TLSConfig, error) {
+func parseServerTLSConfig(getenv func(string) string) (server.TLSConfig, error) {
 	var err error
 
 	enabled := defaultServerTLSEnabled
 	if getenv(serverTLSEnabledKey) != "" {
 		enabled, err = strconv.ParseBool(getenv(serverTLSEnabledKey))
 		if err != nil {
-			return nil, errors.Join(errors.New("invalid server tls enabled"), err)
+			return server.TLSConfig{}, errors.Join(errors.New("invalid server tls enabled"), err)
 		}
 	}
 
@@ -119,10 +119,10 @@ func parseServerTLSConfig(getenv func(string) string) (*server.TLSConfig, error)
 	}
 
 	if enabled && (certFile == "" || keyFile == "") {
-		return nil, errors.New("missing server tls cert file or key file")
+		return server.TLSConfig{}, errors.New("missing server tls cert file or key file")
 	}
 
-	return &server.TLSConfig{
+	return server.TLSConfig{
 		Enabled:  enabled,
 		CertFile: certFile,
 		KeyFile:  keyFile,

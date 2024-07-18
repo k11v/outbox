@@ -6,7 +6,7 @@ type Config struct {
 	Host              string
 	Port              int
 	ReadHeaderTimeout time.Duration
-	TLS               *TLSConfig
+	TLS               TLSConfig
 }
 
 type TLSConfig struct {
