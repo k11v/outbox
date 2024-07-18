@@ -23,14 +23,9 @@ func run(stdout io.Writer, environ []string) error {
 	if err != nil {
 		return err
 	}
-
-	log, err := newLogger(stdout, cfg.Mode)
-	if err != nil {
-		return err
-	}
+	log := newLogger(stdout, cfg.Mode)
 
 	srv := server.New(log, cfg.Server)
-
 	lst, err := server.NewListener(cfg.Server)
 	if err != nil {
 		return err

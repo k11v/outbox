@@ -6,7 +6,7 @@ import (
 	"log/slog"
 )
 
-func newLogger(w io.Writer, mode string) (*slog.Logger, error) {
+func newLogger(w io.Writer, mode string) *slog.Logger {
 	var handler slog.Handler
 	switch mode {
 	case modeDevelopment:
@@ -16,8 +16,8 @@ func newLogger(w io.Writer, mode string) (*slog.Logger, error) {
 		opts := &slog.HandlerOptions{Level: slog.LevelInfo}
 		handler = slog.NewJSONHandler(w, opts)
 	default:
-		return nil, fmt.Errorf("invalid mode: %s", mode)
+		panic(fmt.Sprintf("unknown mode: %s", mode))
 	}
 
-	return slog.New(handler), nil
+	return slog.New(handler)
 }
