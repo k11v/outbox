@@ -11,15 +11,15 @@ import (
 )
 
 func main() {
-	if err := run(os.Stdout, os.Getenv); err != nil {
+	if err := run(os.Stdout, os.Environ()); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
 	os.Exit(0)
 }
 
-func run(stdout io.Writer, getenv func(string) string) error {
-	cfg, err := parseConfig(getenv)
+func run(stdout io.Writer, environ []string) error {
+	cfg, err := parseConfig(environ)
 	if err != nil {
 		return err
 	}
