@@ -8,7 +8,7 @@ import (
 // config holds the application configuration.
 // The zero value is a valid configuration.
 type config struct {
-	Development bool          `env:"DEVELOPMENT"`
+	Development bool          `env:"SQUEAK_DEVELOPMENT"`
 	Server      server.Config `envPrefix:"SQUEAK_SERVER_"`
 }
 
