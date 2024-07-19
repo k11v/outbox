@@ -5,6 +5,7 @@ import (
 	"log/slog"
 )
 
+// newLogger returns a new logger.
 func newLogger(w io.Writer, development bool) *slog.Logger {
 	var handler slog.Handler
 	if development {

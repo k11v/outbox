@@ -4,6 +4,8 @@ import (
 	"time"
 )
 
+// Config holds the server configuration.
+// The zero value is a valid configuration.
 type Config struct {
 	Host              string        `env:"HOST"` // default: "127.0.0.1"
 	Port              int           `env:"PORT"` // default: 8080
@@ -11,6 +13,8 @@ type Config struct {
 	TLS               TLSConfig     `envPrefix:"TLS_"`
 }
 
+// TLSConfig holds the TLS configuration.
+// The zero value is a valid configuration.
 type TLSConfig struct {
 	Enabled  bool   `env:"ENABLED"`
 	CertFile string `env:"CERT_FILE"`
