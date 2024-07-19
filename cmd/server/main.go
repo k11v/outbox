@@ -23,7 +23,7 @@ func run(stdout io.Writer, environ []string) error {
 	if err != nil {
 		return err
 	}
-	log := newLogger(stdout, cfg.Mode)
+	log := newLogger(stdout, cfg.Development)
 
 	srv := server.New(log, cfg.Server)
 	lst, err := server.Listen(cfg.Server)
@@ -33,9 +33,8 @@ func run(stdout io.Writer, environ []string) error {
 
 	log.Info(
 		"starting server",
-		"mode", cfg.Mode,
-		"host", cfg.Server.Host,
-		"port", cfg.Server.Port,
+		"addr", lst.Addr(),
+		"development", cfg.Development,
 		"tls", cfg.Server.TLS.Enabled,
 	)
 	if err = srv.Serve(lst); err != nil && !errors.Is(err, http.ErrServerClosed) {

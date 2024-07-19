@@ -25,7 +25,7 @@ func New(log *slog.Logger, cfg Config) *http.Server {
 
 func Listen(cfg Config) (net.Listener, error) {
 	var err error
-	addr := net.JoinHostPort(cfg.Host, strconv.Itoa(cfg.Port))
+	addr := net.JoinHostPort(cfg.host(), strconv.Itoa(cfg.port()))
 
 	if !cfg.TLS.Enabled {
 		return net.Listen("tcp", addr)

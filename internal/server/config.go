@@ -1,33 +1,34 @@
 package server
 
 import (
-	"fmt"
 	"time"
 )
 
 type Config struct {
-	Host              string        `env:"HOST" envDefault:"127.0.0.1"`
-	Port              int           `env:"PORT" envDefault:"8000"`
-	ReadHeaderTimeout time.Duration `env:"READ_HEADER_TIMEOUT" envDefault:"1s"`
+	Host              string        `env:"HOST"` // default: "127.0.0.1"
+	Port              int           `env:"PORT"` // default: 8080
+	ReadHeaderTimeout time.Duration `env:"READ_HEADER_TIMEOUT"`
 	TLS               TLSConfig     `envPrefix:"TLS_"`
 }
 
-func (c Config) Validate() error {
-	if !(0 < c.Port && c.Port < 65536) {
-		return fmt.Errorf("invalid port: %d", c.Port)
-	}
-	return c.TLS.Validate()
-}
-
 type TLSConfig struct {
-	Enabled  bool   `env:"ENABLED" envDefault:"false"`
-	CertFile string `env:"CERT_FILE" envDefault:""`
-	KeyFile  string `env:"KEY_FILE" envDefault:""`
+	Enabled  bool   `env:"ENABLED"`
+	CertFile string `env:"CERT_FILE"`
+	KeyFile  string `env:"KEY_FILE"`
 }
 
-func (c TLSConfig) Validate() error {
-	if c.Enabled && (c.CertFile == "" || c.KeyFile == "") {
-		return fmt.Errorf("missing cert or key file with TLS enabled")
+func (c Config) host() string {
+	h := c.Host
+	if h == "" {
+		h = "127.0.0.1"
 	}
-	return nil
+	return h
+}
+
+func (c Config) port() int {
+	p := c.Port
+	if p == 0 {
+		p = 8080
+	}
+	return p
 }
