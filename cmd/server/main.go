@@ -26,7 +26,7 @@ func run(stdout io.Writer, environ []string) error {
 	log := newLogger(stdout, cfg.Mode)
 
 	srv := server.New(log, cfg.Server)
-	lst, err := server.NewListener(cfg.Server)
+	lst, err := server.Listen(cfg.Server)
 	if err != nil {
 		return err
 	}

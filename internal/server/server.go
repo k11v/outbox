@@ -23,7 +23,7 @@ func New(log *slog.Logger, cfg Config) *http.Server {
 	}
 }
 
-func NewListener(cfg Config) (net.Listener, error) {
+func Listen(cfg Config) (net.Listener, error) {
 	var err error
 	addr := net.JoinHostPort(cfg.Host, strconv.Itoa(cfg.Port))
 
