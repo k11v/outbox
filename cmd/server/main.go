@@ -33,7 +33,7 @@ func run(stdout io.Writer, environ []string) error {
 
 	log.Info(
 		"starting server",
-		"addr", lst.Addr(),
+		"addr", lst.Addr().String(),
 		"development", cfg.Development,
 		"tls", cfg.Server.TLS.Enabled,
 	)
