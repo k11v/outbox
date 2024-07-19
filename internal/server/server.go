@@ -14,6 +14,8 @@ func New(log *slog.Logger, cfg Config) *http.Server {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", handleGetHealth)
+	mux.HandleFunc("POST /messages", handleCreateMessage)
+	mux.HandleFunc("GET /statistics", handleGetStatistics)
 
 	subLogger := log.With("component", "server")
 	subLogLogger := slog.NewLogLogger(subLogger.Handler(), slog.LevelError)
@@ -47,8 +49,13 @@ func Listen(cfg Config) (net.Listener, error) {
 func handleGetHealth(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_, err := w.Write([]byte(`{"status":"ok"}`))
-	if err != nil {
-		panic(err)
-	}
+	_, _ = w.Write([]byte(`{"status":"ok"}`))
+}
+
+func handleCreateMessage(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+
+func handleGetStatistics(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
 }
