@@ -12,7 +12,7 @@ services:
         condition: service_completed_successfully
   postgres-up:
     build: .
-    entrypoint: ["database-up"]
+    entrypoint: ["postgres-up"]
     env_file:
       - example.env
     depends_on:
