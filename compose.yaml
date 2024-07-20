@@ -1,25 +1,4 @@
 services:
-  database:
-    image: postgres:16.3-alpine
-    env_file:
-      - example.env
-    ports:
-      - "5432:5432"
-    volumes:
-      - database-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-  database-up:
-    build: .
-    entrypoint: ["database-up"]
-    env_file:
-      - example.env
-    depends_on:
-      database:
-        condition: service_healthy
   server:
     build: .
     entrypoint: ["server"]
@@ -29,8 +8,29 @@ services:
       - "80:80"
       - "443:443"
     depends_on:
-      database-up:
+      postgres-up:
         condition: service_completed_successfully
+  postgres-up:
+    build: .
+    entrypoint: ["database-up"]
+    env_file:
+      - example.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+  postgres:
+    image: postgres:16.3-alpine
+    env_file:
+      - example.env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
   kafka:
     image: bitnami/kafka:3.7.1
     environment:
@@ -44,10 +44,11 @@ services:
     ports:
       # Expose container's port 9094 to host's port 9094 specified in KAFKA_CFG_LISTENERS with "EXTERNAL://:9094" and
       # KAFKA_CFG_ADVERTISED_LISTENERS with "EXTERNAL://localhost:9094" respectively. External clients can connect to
-      # Kafka using localhost:9094.
+      # Kafka using localhost:9094. To remove external access, remove the port mapping and EXTERNAL listeners from
+      # KAFKA_CFG_ADVERTISED_LISTENERS, KAFKA_CFG_LISTENERS and KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP.
       - "9094:9094"
     volumes:
       - kafka-data:/bitnami/kafka
 volumes:
-  database-data:
+  postgres-data:
   kafka-data:
