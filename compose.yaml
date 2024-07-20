@@ -18,6 +18,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+  kafka-up:
+    build: .
+    entrypoint: ["kafka-up"]
+    env_file:
+      - example.env
+    depends_on:
+      kafka:
+        condition: service_healthy
   postgres:
     image: postgres:16.3-alpine
     env_file:
