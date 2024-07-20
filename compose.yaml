@@ -28,9 +28,9 @@ services:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
+      interval: 3s
+      timeout: 30s
+      retries: 10
   kafka:
     image: bitnami/kafka:3.7.1
     environment:
@@ -49,6 +49,12 @@ services:
       - "9094:9094"
     volumes:
       - kafka-data:/bitnami/kafka
+    healthcheck:
+      # Might not work in cluster mode (see https://github.com/bitnami/containers/issues/50306).
+      test: ["CMD-SHELL", "kafka-cluster.sh cluster-id --bootstrap-server localhost:9092 || exit 1"]
+      interval: 3s
+      timeout: 30s
+      retries: 10
 volumes:
   postgres-data:
   kafka-data:
