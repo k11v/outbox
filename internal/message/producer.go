@@ -12,7 +12,7 @@ type Producer interface {
 }
 
 type KafkaProducer struct {
-	Writer *kafka.Writer // required, its Topic should not be set
+	Writer *kafka.Writer // required, its Topic must be unset
 }
 
 func (p *KafkaProducer) Produce(ctx context.Context, messages []Message) error {
