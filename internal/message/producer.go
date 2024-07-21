@@ -12,6 +12,7 @@ type Producer interface {
 }
 
 type KafkaProducer struct {
+	Topic  string        // required
 	Writer *kafka.Writer // required
 }
 
@@ -19,6 +20,7 @@ func (p *KafkaProducer) Produce(ctx context.Context, messages []Message) error {
 	kafkaMessages := make([]kafka.Message, len(messages))
 	for i, m := range messages {
 		kafkaMessages[i] = kafka.Message{
+			Topic: p.Topic,
 			Key:   m.Key,
 			Value: m.Value,
 		}
