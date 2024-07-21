@@ -31,6 +31,8 @@ services:
     entrypoint: ["kafka-up"]
     env_file:
       - example.env
+    environment:
+      - SQUEAK_KAFKA_BROKERS=kafka:9092
     depends_on:
       kafka:
         condition: service_healthy
