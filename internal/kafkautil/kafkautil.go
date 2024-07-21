@@ -1,15 +1,13 @@
 package kafkautil
 
 import (
-	"strings"
-
 	"github.com/segmentio/kafka-go"
 )
 
-func NewKafkaWriter(addr string) *kafka.Writer {
-	addrs := strings.Split(addr, ",")
+// NewKafkaWriter creates a new kafka.Writer.
+func NewKafkaWriter(cfg Config) *kafka.Writer {
 	return &kafka.Writer{
-		Addr:         kafka.TCP(addrs...),
+		Addr:         kafka.TCP(cfg.Brokers...),
 		Balancer:     &kafka.LeastBytes{},
 		RequiredAcks: kafka.RequireOne,
 	}

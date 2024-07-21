@@ -29,7 +29,7 @@ func run(stdout io.Writer, environ []string) error {
 	}
 	log := newLogger(stdout, cfg.Development)
 
-	kafkaWriter := kafkautil.NewKafkaWriter("localhost:9094")
+	kafkaWriter := kafkautil.NewKafkaWriter(cfg.Kafka)
 	messageProducer := &message.KafkaProducer{Writer: kafkaWriter}
 
 	srv := server.New(cfg.Server, log, messageProducer)
