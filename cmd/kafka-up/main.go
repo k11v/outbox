@@ -14,6 +14,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+// topicCfgs is a list of topic configurations that will be created by kafka-up.
 var topicCfgs = []kafka.TopicConfig{
 	{
 		Topic:             "example",
