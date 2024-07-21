@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 
@@ -30,6 +31,8 @@ func run(stdout io.Writer, environ []string) error {
 	log := newLogger(stdout, cfg.Development)
 
 	kafkaWriter := kafkautil.NewKafkaWriter(cfg.Kafka)
+	defer closeWithLog(kafkaWriter, log)
+
 	messageProducer := &message.KafkaProducer{Writer: kafkaWriter}
 
 	srv := server.New(cfg.Server, log, messageProducer)
@@ -49,4 +52,10 @@ func run(stdout io.Writer, environ []string) error {
 	}
 
 	return nil
+}
+
+func closeWithLog(c io.Closer, log *slog.Logger) {
+	if err := c.Close(); err != nil {
+		log.Error("failed to close", "error", err)
+	}
 }
