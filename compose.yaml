@@ -13,6 +13,8 @@ services:
     depends_on:
       postgres-up:
         condition: service_completed_successfully
+      kafka-up:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 3s
