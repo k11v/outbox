@@ -7,7 +7,6 @@ import (
 )
 
 // config holds the application configuration.
-// The zero value is a valid configuration.
 type config struct {
 	Development bool             `env:"SQUEAK_DEVELOPMENT"`
 	Kafka       kafkautil.Config `envPrefix:"SQUEAK_KAFKA_"`
