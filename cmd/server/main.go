@@ -30,7 +30,7 @@ func run(stdout io.Writer, environ []string) error {
 	}
 	log := newLogger(stdout, cfg.Development)
 
-	kafkaWriter := kafkautil.NewKafkaWriter(cfg.Kafka)
+	kafkaWriter := kafkautil.NewWriter(cfg.Kafka)
 	defer closeWithLog(kafkaWriter, log)
 
 	messageProducer := &message.KafkaProducer{Writer: kafkaWriter}
