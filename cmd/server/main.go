@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/k11v/squeak/internal/message"
+
 	"github.com/k11v/squeak/internal/server"
 )
 
@@ -25,7 +27,10 @@ func run(stdout io.Writer, environ []string) error {
 	}
 	log := newLogger(stdout, cfg.Development)
 
-	srv := server.New(log, cfg.Server)
+	kafkaWriter := message.NewKafkaWriter("localhost:9094")
+	messageProducer := &message.KafkaProducer{Writer: kafkaWriter}
+
+	srv := server.New(cfg.Server, log, messageProducer)
 	lst, err := server.Listen(cfg.Server)
 	if err != nil {
 		return err

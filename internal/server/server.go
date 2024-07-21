@@ -6,14 +6,16 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+
+	"github.com/k11v/squeak/internal/message"
 )
 
 // New returns a new HTTP server.
 // It should be started with a listener returned by Listen.
-func New(log *slog.Logger, cfg Config) *http.Server {
+func New(cfg Config, log *slog.Logger, messageProducer message.Producer) *http.Server {
 	mux := http.NewServeMux()
 
-	h := &handler{log: log}
+	h := &handler{log: log, messageProducer: messageProducer}
 	mux.HandleFunc("GET /health", h.handleGetHealth)
 	mux.HandleFunc("POST /messages", h.handleCreateMessage)
 	mux.HandleFunc("GET /statistics", h.handleGetStatistics)
