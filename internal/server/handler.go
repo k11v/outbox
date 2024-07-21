@@ -72,5 +72,6 @@ func (h *handler) handleGetStatistics(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		h.log.Error("failed to encode response", "error", err)
+		return
 	}
 }
