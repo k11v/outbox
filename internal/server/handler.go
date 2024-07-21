@@ -49,11 +49,6 @@ func (h *handler) handleGetStatistics(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// type errorResponse struct {
-// 	Code    string `json:"code"`
-// 	Message string `json:"message"`
-// }
-
 func closeWithLog(c io.Closer, log *slog.Logger) {
 	if err := c.Close(); err != nil {
 		log.Error("failed to close", "error", err)
