@@ -12,14 +12,14 @@ var (
 )
 
 type Producer interface {
-	Produce(ctx context.Context, messages []Message) error
+	Produce(ctx context.Context, messages ...Message) error
 }
 
 type KafkaProducer struct {
 	Writer *kafka.Writer // required, its Topic must be unset
 }
 
-func (p *KafkaProducer) Produce(ctx context.Context, messages []Message) error {
+func (p *KafkaProducer) Produce(ctx context.Context, messages ...Message) error {
 	kafkaMessages := make([]kafka.Message, len(messages))
 	for i, m := range messages {
 		kafkaMessages[i] = kafka.Message{

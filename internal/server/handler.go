@@ -48,7 +48,7 @@ func (h *handler) handleCreateMessage(w http.ResponseWriter, r *http.Request) {
 		Value: []byte(req.Value),
 	}
 
-	if err := h.messageProducer.Produce(r.Context(), []message.Message{m}); err != nil {
+	if err := h.messageProducer.Produce(r.Context(), m); err != nil {
 		h.log.Error("failed to produce message", "error", err)
 		if errors.Is(err, message.ErrUnknownTopic) {
 			w.WriteHeader(http.StatusBadRequest)
