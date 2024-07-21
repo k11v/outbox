@@ -25,8 +25,7 @@ func (p *KafkaProducer) Produce(ctx context.Context, messages []Message) error {
 		}
 	}
 
-	err := p.Writer.WriteMessages(ctx, kafkaMessages...)
-	if err != nil {
+	if err := p.Writer.WriteMessages(ctx, kafkaMessages...); err != nil {
 		return err
 	}
 
