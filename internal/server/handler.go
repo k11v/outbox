@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -48,8 +49,11 @@ func (h *handler) handleCreateMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.messageProducer.Produce(r.Context(), []message.Message{m}); err != nil {
-		// FIXME: Missing topic could be handled differently.
 		h.log.Error("failed to produce message", "error", err)
+		if errors.Is(err, message.ErrUnknownTopic) {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

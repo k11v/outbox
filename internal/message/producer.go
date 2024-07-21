@@ -2,8 +2,13 @@ package message
 
 import (
 	"context"
+	"errors"
 
 	"github.com/segmentio/kafka-go"
+)
+
+var (
+	ErrUnknownTopic = errors.New("unknown topic")
 )
 
 type Producer interface {
@@ -25,6 +30,9 @@ func (p *KafkaProducer) Produce(ctx context.Context, messages []Message) error {
 	}
 
 	if err := p.Writer.WriteMessages(ctx, kafkaMessages...); err != nil {
+		if errors.Is(err, kafka.UnknownTopicOrPartition) {
+			return errors.Join(ErrUnknownTopic, err)
+		}
 		return err
 	}
 
