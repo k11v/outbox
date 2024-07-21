@@ -22,6 +22,10 @@ RUN --mount=type=cache,target=/root/gocache \
 
 FROM alpine:3.20.1 AS runner
 
+# Install dependencies.
+
+RUN apk add --no-cache curl
+
 # Prepare environment.
 
 ENV UID=1000 GID=1000 HOME=/user

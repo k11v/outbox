@@ -3,14 +3,11 @@ package main
 import (
 	"github.com/caarlos0/env/v11"
 	"github.com/k11v/squeak/internal/kafkautil"
-	"github.com/k11v/squeak/internal/server"
 )
 
 // config holds the application configuration.
 type config struct {
-	Development bool             `env:"SQUEAK_DEVELOPMENT"`
-	Kafka       kafkautil.Config `envPrefix:"SQUEAK_KAFKA_"`
-	Server      server.Config    `envPrefix:"SQUEAK_SERVER_"`
+	Kafka kafkautil.Config `envPrefix:"SQUEAK_KAFKA_"`
 }
 
 // parseConfig parses the application configuration from the environment variables.

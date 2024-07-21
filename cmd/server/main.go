@@ -4,9 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 
+	"github.com/k11v/squeak/internal/kafkautil"
+	"github.com/k11v/squeak/internal/message"
 	"github.com/k11v/squeak/internal/server"
 )
 
@@ -25,7 +28,12 @@ func run(stdout io.Writer, environ []string) error {
 	}
 	log := newLogger(stdout, cfg.Development)
 
-	srv := server.New(log, cfg.Server)
+	kafkaWriter := kafkautil.NewWriter(cfg.Kafka)
+	defer closeWithLog(kafkaWriter, log)
+
+	messageProducer := &message.KafkaProducer{Writer: kafkaWriter}
+
+	srv := server.New(cfg.Server, log, messageProducer)
 	lst, err := server.Listen(cfg.Server)
 	if err != nil {
 		return err
@@ -42,4 +50,10 @@ func run(stdout io.Writer, environ []string) error {
 	}
 
 	return nil
+}
+
+func closeWithLog(c io.Closer, log *slog.Logger) {
+	if err := c.Close(); err != nil {
+		log.Error("failed to close", "error", err)
+	}
 }

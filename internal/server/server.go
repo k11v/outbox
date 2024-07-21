@@ -6,14 +6,19 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+
+	"github.com/k11v/squeak/internal/message"
 )
 
 // New returns a new HTTP server.
 // It should be started with a listener returned by Listen.
-func New(log *slog.Logger, cfg Config) *http.Server {
+func New(cfg Config, log *slog.Logger, messageProducer message.Producer) *http.Server {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /health", handleGetHealth)
+	h := &handler{log: log, messageProducer: messageProducer}
+	mux.HandleFunc("GET /health", h.handleGetHealth)
+	mux.HandleFunc("POST /messages", h.handleCreateMessage)
+	mux.HandleFunc("GET /statistics", h.handleGetStatistics)
 
 	subLogger := log.With("component", "server")
 	subLogLogger := slog.NewLogLogger(subLogger.Handler(), slog.LevelError)
@@ -42,13 +47,4 @@ func Listen(cfg Config) (net.Listener, error) {
 		return nil, err
 	}
 	return tls.Listen("tcp", addr, tlsCfg)
-}
-
-func handleGetHealth(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_, err := w.Write([]byte(`{"status":"ok"}`))
-	if err != nil {
-		panic(err)
-	}
 }
