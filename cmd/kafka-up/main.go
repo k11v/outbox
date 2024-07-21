@@ -1,61 +1,96 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/segmentio/kafka-go"
 )
 
+var topicCfgs = []kafka.TopicConfig{
+	{
+		Topic:             "example",
+		NumPartitions:     1,
+		ReplicationFactor: 1,
+	},
+	{
+		Topic:             "example2",
+		NumPartitions:     1,
+		ReplicationFactor: 1,
+	},
+	{
+		Topic:             "example3",
+		NumPartitions:     1,
+		ReplicationFactor: 1,
+	},
+}
+
 func main() {
-	if err := run(); err != nil {
+	if err := run(os.Environ()); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
 	os.Exit(0)
 }
 
-func run() error {
+func run(environ []string) error {
+	cfg, err := parseConfig(environ)
+	if err != nil {
+		return err
+	}
 	log := slog.Default()
 
-	topic := "example"
-	addr := "kafka:9092"
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
 
-	if err := createTopic(topic, addr, log); err != nil {
+	if err = createTopics(ctx, log, cfg.Kafka.Brokers, topicCfgs...); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func createTopic(topic, addr string, log *slog.Logger) error {
-	conn, err := kafka.Dial("tcp", addr)
+func createTopics(ctx context.Context, log *slog.Logger, brokers []string, topicCfgs ...kafka.TopicConfig) error {
+	// Connect to the first broker that is available.
+
+	var conn *kafka.Conn
+	var err error
+	for _, broker := range brokers {
+		conn, err = kafka.DialContext(ctx, "tcp", broker)
+		if err == nil {
+			break
+		}
+	}
 	if err != nil {
-		return err
+		return errors.Join(errors.New("failed to connect to any broker"), err)
 	}
 	defer closeWithLog(conn, log)
+
+	// Get the controller broker.
 
 	controller, err := conn.Controller()
 	if err != nil {
 		return err
 	}
 
-	controllerConn, err := kafka.Dial("tcp", net.JoinHostPort(controller.Host, strconv.Itoa(controller.Port)))
+	// Connect to the controller broker.
+
+	controllerConn, err := kafka.DialContext(ctx, "tcp", net.JoinHostPort(controller.Host, strconv.Itoa(controller.Port)))
 	if err != nil {
-		return err
+		return errors.Join(errors.New("failed to connect to controller"), err)
 	}
 	defer closeWithLog(controllerConn, log)
 
-	topicCfg := kafka.TopicConfig{
-		Topic:             topic,
-		NumPartitions:     1,
-		ReplicationFactor: 1,
-	}
-	if err = controllerConn.CreateTopics(topicCfg); err != nil {
+	// Create the topics.
+
+	if err = controllerConn.CreateTopics(topicCfgs...); err != nil {
 		return err
 	}
 
