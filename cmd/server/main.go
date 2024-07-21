@@ -9,9 +9,7 @@ import (
 	"os"
 
 	"github.com/k11v/squeak/internal/kafkautil"
-
 	"github.com/k11v/squeak/internal/message"
-
 	"github.com/k11v/squeak/internal/server"
 )
 
