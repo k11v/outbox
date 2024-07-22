@@ -12,7 +12,7 @@ import (
 func NewPool(ctx context.Context, log *slog.Logger, cfg Config, development bool) (*pgxpool.Pool, error) {
 	pgxCfg, err := pgxpool.ParseConfig(cfg.DSN)
 	if err != nil {
-		return nil, errors.Join(errors.New("failed to parse DSN"), err)
+		return nil, errors.Join(errors.New("failed to parse Postgres DSN"), err)
 	}
 	if development {
 		pgxCfg.ConnConfig.Tracer = newTracer(log)
@@ -20,11 +20,11 @@ func NewPool(ctx context.Context, log *slog.Logger, cfg Config, development bool
 
 	db, err := pgxpool.NewWithConfig(ctx, pgxCfg)
 	if err != nil {
-		return nil, errors.Join(errors.New("failed to create database pool"), err)
+		return nil, errors.Join(errors.New("failed to create Postgres pool"), err)
 	}
 
 	if err = db.Ping(ctx); err != nil {
-		return nil, errors.Join(errors.New("failed to ping database"), err)
+		log.Warn("failed to ping Postgres after creating pool", "error", err)
 	}
 
 	return db, nil
