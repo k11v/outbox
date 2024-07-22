@@ -4,6 +4,7 @@ go 1.22.5
 
 require (
 	github.com/caarlos0/env/v11 v11.1.0
+	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/segmentio/kafka-go v0.4.47
 )
