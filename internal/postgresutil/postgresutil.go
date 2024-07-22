@@ -36,7 +36,6 @@ func newTracer(log *slog.Logger) *tracelog.TraceLog {
 		for k, v := range data {
 			attrs = append(attrs, slog.Any(k, v))
 		}
-		attrs = append(attrs, slog.String("component", "pgx"))
 
 		var lvl slog.Level
 		switch level {
