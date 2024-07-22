@@ -29,7 +29,13 @@ func (h *handler) handleGetHealth(w http.ResponseWriter, _ *http.Request) {
 }
 
 type createMessageRequest struct {
-	Topic string `json:"topic"`
+	Topic   string                       `json:"topic"`
+	Key     string                       `json:"key"`
+	Value   string                       `json:"value"`
+	Headers []createMessageHeaderRequest `json:"headers"`
+}
+
+type createMessageHeaderRequest struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }
@@ -42,10 +48,18 @@ func (h *handler) handleCreateMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	headers := make([]message.Header, len(req.Headers))
+	for i, header := range req.Headers {
+		headers[i] = message.Header{
+			Key:   header.Key,
+			Value: []byte(header.Value),
+		}
+	}
 	m := message.Message{
-		Topic: req.Topic,
-		Key:   []byte(req.Key),
-		Value: []byte(req.Value),
+		Topic:   req.Topic,
+		Key:     []byte(req.Key),
+		Value:   []byte(req.Value),
+		Headers: headers,
 	}
 
 	if err := h.messageProducer.Produce(r.Context(), m); err != nil {

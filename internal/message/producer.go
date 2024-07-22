@@ -22,10 +22,19 @@ type KafkaProducer struct {
 func (p *KafkaProducer) Produce(ctx context.Context, messages ...Message) error {
 	kafkaMessages := make([]kafka.Message, len(messages))
 	for i, m := range messages {
+		headers := make([]kafka.Header, len(m.Headers))
+		for j, h := range m.Headers {
+			headers[j] = kafka.Header{
+				Key:   h.Key,
+				Value: h.Value,
+			}
+		}
+
 		kafkaMessages[i] = kafka.Message{
-			Topic: m.Topic,
-			Key:   m.Key,
-			Value: m.Value,
+			Topic:   m.Topic,
+			Key:     m.Key,
+			Value:   m.Value,
+			Headers: headers,
 		}
 	}
 

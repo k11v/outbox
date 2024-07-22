@@ -1,7 +1,13 @@
 package message
 
 type Message struct {
-	Topic string
-	Key   []byte
+	Topic   string
+	Key     []byte
+	Value   []byte
+	Headers []Header
+}
+
+type Header struct {
+	Key   string
 	Value []byte
 }
