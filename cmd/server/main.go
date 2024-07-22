@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/k11v/squeak/internal/kafkautil"
 	"github.com/k11v/squeak/internal/message"
+	"github.com/k11v/squeak/internal/postgresutil"
 	"github.com/k11v/squeak/internal/server"
 )
 
@@ -28,10 +30,18 @@ func run(stdout io.Writer, environ []string) error {
 	}
 	log := newLogger(stdout, cfg.Development)
 
+	ctx := context.Background()
+
 	kafkaWriter := kafkautil.NewWriter(cfg.Kafka)
 	defer closeWithLog(kafkaWriter, log)
 
 	messageProducer := &message.KafkaProducer{Writer: kafkaWriter}
+
+	postgresPool, err := postgresutil.NewPool(ctx, log, cfg.Postgres, cfg.Development)
+	if err != nil {
+		return err
+	}
+	defer postgresPool.Close()
 
 	srv := server.New(cfg.Server, log, messageProducer)
 	lst, err := server.Listen(cfg.Server)
