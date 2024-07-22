@@ -1,4 +1,4 @@
-module github.com/k11v/squeak
+module github.com/k11v/outbox
 
 go 1.22.5
 

@@ -2,17 +2,17 @@ package main
 
 import (
 	"github.com/caarlos0/env/v11"
-	"github.com/k11v/squeak/internal/kafkautil"
-	"github.com/k11v/squeak/internal/postgresutil"
-	"github.com/k11v/squeak/internal/server"
+	"github.com/k11v/outbox/internal/kafkautil"
+	"github.com/k11v/outbox/internal/postgresutil"
+	"github.com/k11v/outbox/internal/server"
 )
 
 // config holds the application configuration.
 type config struct {
-	Development bool                `env:"SQUEAK_DEVELOPMENT"`
-	Kafka       kafkautil.Config    `envPrefix:"SQUEAK_KAFKA_"`
-	Postgres    postgresutil.Config `envPrefix:"SQUEAK_POSTGRES_"`
-	Server      server.Config       `envPrefix:"SQUEAK_SERVER_"`
+	Development bool                `env:"OUTBOX_DEVELOPMENT"`
+	Kafka       kafkautil.Config    `envPrefix:"OUTBOX_KAFKA_"`
+	Postgres    postgresutil.Config `envPrefix:"OUTBOX_POSTGRES_"`
+	Server      server.Config       `envPrefix:"OUTBOX_SERVER_"`
 }
 
 // parseConfig parses the application configuration from the environment variables.

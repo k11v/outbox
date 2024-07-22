@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/k11v/squeak/internal/message"
+	"github.com/k11v/outbox/internal/message"
 )
 
 type handler struct {
