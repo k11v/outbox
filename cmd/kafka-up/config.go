@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/caarlos0/env/v11"
-	"github.com/k11v/squeak/internal/kafkautil"
+	"github.com/k11v/outbox/internal/kafkautil"
 )
 
 // config holds the application configuration.

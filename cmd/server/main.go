@@ -9,10 +9,10 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/k11v/squeak/internal/kafkautil"
-	"github.com/k11v/squeak/internal/message"
-	"github.com/k11v/squeak/internal/postgresutil"
-	"github.com/k11v/squeak/internal/server"
+	"github.com/k11v/outbox/internal/kafkautil"
+	"github.com/k11v/outbox/internal/message"
+	"github.com/k11v/outbox/internal/postgresutil"
+	"github.com/k11v/outbox/internal/server"
 )
 
 func main() {

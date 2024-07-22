@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/k11v/squeak/internal/message"
+	"github.com/k11v/outbox/internal/message"
 )
 
 // New returns a new HTTP server.
