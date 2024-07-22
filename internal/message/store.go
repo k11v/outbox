@@ -24,14 +24,14 @@ type PostgresStore struct {
 	Pool *pgxpool.Pool
 }
 
-func (s *PostgresStore) Add(ctx context.Context, messages ...Message) error {
+func (s *PostgresStore) Add(context.Context, ...Message) error {
 	return nil
 }
 
-func (s *PostgresStore) GetUndelivered(ctx context.Context) ([]Message, error) {
+func (s *PostgresStore) GetUndelivered(context.Context) ([]Message, error) {
 	return nil, nil
 }
 
-func (s *PostgresStore) SetDelivered(ctx context.Context, ids ...uuid.UUID) error {
+func (s *PostgresStore) SetDelivered(context.Context, ...uuid.UUID) error {
 	return nil
 }
