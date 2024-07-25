@@ -14,7 +14,6 @@ import (
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/k11v/outbox/internal/postgresutil"
-	"github.com/k11v/outbox/internal/postgresutil/provision"
 )
 
 func main() {
@@ -60,7 +59,7 @@ func newDB(ctx context.Context, cfg postgresutil.Config) (*sql.DB, error) {
 }
 
 func migrateDB(db *sql.DB) error {
-	sourceDriver, err := iofs.New(provision.MigrationsFS(), ".")
+	sourceDriver, err := iofs.New(migrationsFS(), ".")
 	if err != nil {
 		return fmt.Errorf("failed to create migrate source driver: %w", err)
 	}

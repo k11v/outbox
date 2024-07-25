@@ -1,4 +1,4 @@
-package provision
+package main
 
 import (
 	"embed"
@@ -8,8 +8,8 @@ import (
 //go:embed migrations/*.sql
 var migrations embed.FS
 
-// MigrationsFS returns a filesystem with migrations for golang-migrate/migrate.
-func MigrationsFS() fs.FS {
+// migrationsFS returns a filesystem with migrations for golang-migrate/migrate.
+func migrationsFS() fs.FS {
 	sub, err := fs.Sub(migrations, "migrations")
 	if err != nil {
 		panic(err)
