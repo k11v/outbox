@@ -82,6 +82,6 @@ func migrateDB(db *sql.DB) error {
 
 func closeWithLog(c io.Closer, log *slog.Logger) {
 	if err := c.Close(); err != nil {
-		log.Error("failed to close resource", "error", err)
+		log.Error("failed to close", "error", err)
 	}
 }
