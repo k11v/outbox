@@ -2,11 +2,12 @@ package server
 
 import (
 	"crypto/tls"
-	"github.com/k11v/outbox/internal/outbox"
 	"log/slog"
 	"net"
 	"net/http"
 	"strconv"
+
+	"github.com/k11v/outbox/internal/outbox"
 )
 
 // New returns a new HTTP server.

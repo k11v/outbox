@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/k11v/outbox/internal/outbox"
 	"io"
 	"log/slog"
 	"net/http"
 	"os"
+
+	"github.com/k11v/outbox/internal/outbox"
 
 	"github.com/k11v/outbox/internal/kafkautil"
 	"github.com/k11v/outbox/internal/postgresutil"

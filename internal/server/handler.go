@@ -3,9 +3,10 @@ package server
 import (
 	"encoding/json"
 	"errors"
-	"github.com/k11v/outbox/internal/outbox"
 	"log/slog"
 	"net/http"
+
+	"github.com/k11v/outbox/internal/outbox"
 )
 
 type handler struct {
