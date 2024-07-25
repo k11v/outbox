@@ -3,15 +3,14 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"github.com/k11v/outbox/internal/outbox"
 	"log/slog"
 	"net/http"
-
-	"github.com/k11v/outbox/internal/message"
 )
 
 type handler struct {
-	log             *slog.Logger     // required
-	messageProducer message.Producer // required
+	log             *slog.Logger    // required
+	messageProducer outbox.Producer // required
 }
 
 type getHealthResponse struct {
@@ -48,14 +47,14 @@ func (h *handler) handleCreateMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	headers := make([]message.Header, len(req.Headers))
+	headers := make([]outbox.Header, len(req.Headers))
 	for i, header := range req.Headers {
-		headers[i] = message.Header{
+		headers[i] = outbox.Header{
 			Key:   header.Key,
 			Value: []byte(header.Value),
 		}
 	}
-	m := message.Message{
+	m := outbox.Message{
 		Topic:   req.Topic,
 		Key:     []byte(req.Key),
 		Value:   []byte(req.Value),
@@ -64,7 +63,7 @@ func (h *handler) handleCreateMessage(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.messageProducer.Produce(r.Context(), m); err != nil {
 		h.log.Error("failed to produce message", "error", err)
-		if errors.Is(err, message.ErrUnknownTopic) {
+		if errors.Is(err, outbox.ErrUnknownTopic) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}

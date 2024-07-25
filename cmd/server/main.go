@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/k11v/outbox/internal/outbox"
 	"io"
 	"log/slog"
 	"net/http"
 	"os"
 
 	"github.com/k11v/outbox/internal/kafkautil"
-	"github.com/k11v/outbox/internal/message"
 	"github.com/k11v/outbox/internal/postgresutil"
 	"github.com/k11v/outbox/internal/server"
 )
@@ -35,7 +35,7 @@ func run(stdout io.Writer, environ []string) error {
 	kafkaWriter := kafkautil.NewWriter(cfg.Kafka)
 	defer closeWithLog(kafkaWriter, log)
 
-	messageProducer := &message.KafkaProducer{Writer: kafkaWriter}
+	messageProducer := &outbox.KafkaProducer{Writer: kafkaWriter}
 
 	postgresPool, err := postgresutil.NewPool(ctx, log, cfg.Postgres, cfg.Development)
 	if err != nil {

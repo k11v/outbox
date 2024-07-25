@@ -2,36 +2,22 @@ package message
 
 import (
 	"context"
+	"github.com/k11v/outbox/internal/outbox"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Store provides an interface for storing and retrieving messages.
 type Store interface {
-	// Add adds one or more messages to the store.
-	Add(ctx context.Context, messages ...Message) error
-
-	// GetUndelivered returns a list of undelivered messages.
-	GetUndelivered(ctx context.Context) ([]Message, error)
-
-	// SetDelivered marks the messages as delivered.
-	SetDelivered(ctx context.Context, ids ...uuid.UUID) error
+	// AddWithOutbox adds messages to the store and outbox.
+	//
+	// Outbox messages are separate from business messages to allow for design
+	// pattern extensibility. For example, you might want to add a message to
+	// the outbox when a user signs up.
+	AddWithOutbox(ctx context.Context, messages []Message, outboxMessages []outbox.Message) error
 }
 
 // PostgresStore implements the Store interface using a PostgreSQL database.
 type PostgresStore struct {
-	Pool *pgxpool.Pool
-}
-
-func (s *PostgresStore) Add(context.Context, ...Message) error {
-	return nil
-}
-
-func (s *PostgresStore) GetUndelivered(context.Context) ([]Message, error) {
-	return nil, nil
-}
-
-func (s *PostgresStore) SetDelivered(context.Context, ...uuid.UUID) error {
-	return nil
+	Pool *pgxpool.Pool // required
 }

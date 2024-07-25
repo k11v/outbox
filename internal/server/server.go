@@ -2,17 +2,16 @@ package server
 
 import (
 	"crypto/tls"
+	"github.com/k11v/outbox/internal/outbox"
 	"log/slog"
 	"net"
 	"net/http"
 	"strconv"
-
-	"github.com/k11v/outbox/internal/message"
 )
 
 // New returns a new HTTP server.
 // It should be started with a listener returned by Listen.
-func New(cfg Config, log *slog.Logger, messageProducer message.Producer) *http.Server {
+func New(cfg Config, log *slog.Logger, messageProducer outbox.Producer) *http.Server {
 	mux := http.NewServeMux()
 
 	h := &handler{log: log, messageProducer: messageProducer}
