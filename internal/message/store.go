@@ -13,7 +13,8 @@ type Store interface {
 	//
 	// Outbox messages are separate from business messages to allow for design
 	// pattern extensibility. For example, you might want to add a message to
-	// the outbox when a user signs up.
+	// the outbox when a user signs up, in which case you would use the outbox
+	// message and not the business message.
 	AddWithOutbox(ctx context.Context, messages []Message, outboxMessages []outbox.Message) error
 }
 
