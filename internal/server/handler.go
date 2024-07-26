@@ -6,12 +6,14 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/k11v/outbox/internal/outbox"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/segmentio/kafka-go"
 )
 
 type handler struct {
-	log             *slog.Logger    // required
-	messageProducer outbox.Producer // required
+	kafkaWriter  *kafka.Writer // required, its Topic must be unset
+	log          *slog.Logger  // required
+	postgresPool *pgxpool.Pool // required
 }
 
 type getHealthResponse struct {
@@ -48,30 +50,29 @@ func (h *handler) handleCreateMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	headers := make([]outbox.Header, len(req.Headers))
+	headers := make([]kafka.Header, len(req.Headers))
 	for i, header := range req.Headers {
-		headers[i] = outbox.Header{
+		headers[i] = kafka.Header{
 			Key:   header.Key,
 			Value: []byte(header.Value),
 		}
 	}
-	m := outbox.Message{
+	m := kafka.Message{
 		Topic:   req.Topic,
 		Key:     []byte(req.Key),
 		Value:   []byte(req.Value),
 		Headers: headers,
 	}
 
-	if err := h.messageProducer.Produce(r.Context(), m); err != nil {
-		h.log.Error("failed to produce message", "error", err)
-		if errors.Is(err, outbox.ErrUnknownTopicOrInternal) {
+	if err := h.kafkaWriter.WriteMessages(r.Context(), m); err != nil {
+		h.log.Error("failed to write message", "error", err)
+		if errors.Is(err, kafka.UnknownTopicOrPartition) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
 	w.WriteHeader(http.StatusOK)
 }
 

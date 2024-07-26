@@ -7,15 +7,16 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/k11v/outbox/internal/outbox"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/segmentio/kafka-go"
 )
 
 // New returns a new HTTP server.
 // It should be started with a listener returned by Listen.
-func New(cfg Config, log *slog.Logger, messageProducer outbox.Producer) *http.Server {
+func New(cfg Config, log *slog.Logger, kafkaWriter *kafka.Writer, postgresPool *pgxpool.Pool) *http.Server {
 	mux := http.NewServeMux()
 
-	h := &handler{log: log, messageProducer: messageProducer}
+	h := &handler{log: log, kafkaWriter: kafkaWriter, postgresPool: postgresPool}
 	mux.HandleFunc("GET /health", h.handleGetHealth)
 	mux.HandleFunc("POST /messages", h.handleCreateMessage)
 	mux.HandleFunc("GET /statistics", h.handleGetStatistics)

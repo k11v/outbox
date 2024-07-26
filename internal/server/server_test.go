@@ -14,8 +14,8 @@ func TestGetHealth(t *testing.T) {
 		req := httptest.NewRequest("GET", "/health", nil)
 		rec := httptest.NewRecorder()
 
-		// FIXME: messageProducer is nil.
-		srv := New(Config{}, slog.Default(), nil)
+		// FIXME: Config is empty, kafkaWriter and postgresPool are nil.
+		srv := New(Config{}, slog.Default(), nil, nil)
 		srv.Handler.ServeHTTP(rec, req)
 
 		if got, want := rec.Code, http.StatusOK; got != want {
