@@ -1,2 +1,7 @@
 BEGIN;
+
+DROP TABLE IF EXISTS outbox;
+
+DROP EXTENSION IF EXISTS "uuid-ossp";
+
 COMMIT;
