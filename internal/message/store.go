@@ -3,9 +3,8 @@ package message
 import (
 	"context"
 
-	"github.com/k11v/outbox/internal/outbox"
-
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/k11v/outbox/internal/outbox"
 )
 
 // Store provides an interface for storing and retrieving messages.
