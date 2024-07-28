@@ -2,7 +2,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TABLE IF NOT EXISTS outbox (
+CREATE TABLE IF NOT EXISTS outbox_messages (
     id uuid DEFAULT uuid_generate_v4(),
     created_at timestamp with time zone DEFAULT now(),
     status text NOT NULL,
