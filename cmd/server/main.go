@@ -10,7 +10,6 @@ import (
 	"os"
 
 	"github.com/k11v/outbox/internal/kafkautil"
-	"github.com/k11v/outbox/internal/message"
 	"github.com/k11v/outbox/internal/postgresutil"
 	"github.com/k11v/outbox/internal/server"
 )
@@ -35,15 +34,13 @@ func run(stdout io.Writer, environ []string) error {
 	kafkaWriter := kafkautil.NewWriter(cfg.Kafka)
 	defer closeWithLog(kafkaWriter, log)
 
-	messageProducer := &message.KafkaProducer{Writer: kafkaWriter}
-
 	postgresPool, err := postgresutil.NewPool(ctx, log, cfg.Postgres, cfg.Development)
 	if err != nil {
 		return err
 	}
 	defer postgresPool.Close()
 
-	srv := server.New(cfg.Server, log, messageProducer)
+	srv := server.New(cfg.Server, log, kafkaWriter, postgresPool)
 	lst, err := server.Listen(cfg.Server)
 	if err != nil {
 		return err
