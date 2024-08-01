@@ -1,13 +1,15 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 
-	"github.com/k11v/outbox/internal/outbox"
-
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/k11v/outbox/internal/outbox"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -43,46 +45,76 @@ type createMessageHeaderRequest struct {
 	Value string `json:"value"`
 }
 
-// handleCreateMessage implements all crucial parts of the outbox pattern. This
-// function will later be split up to only store the message in Postgres and
-// have a worker that reads from Postgres and sends to Kafka.
+func (r *createMessageRequest) validate() error {
+	if r.Topic == "" {
+		return fmt.Errorf("topic is required")
+	}
+	if r.Key == "" {
+		return fmt.Errorf("key is required")
+	}
+	if r.Value == "" {
+		return fmt.Errorf("value is required")
+	}
+	for i, header := range r.Headers {
+		if header.Key == "" {
+			return fmt.Errorf("header key is required at index %d", i)
+		}
+	}
+	return nil
+}
+
 func (h *handler) handleCreateMessage(w http.ResponseWriter, r *http.Request) {
 	var req createMessageRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.log.Error("failed to decode request", "error", err)
 		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(fmt.Sprintf("failed to decode request: %v", err)))
+		return
+	}
+	if err := req.validate(); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(fmt.Sprintf("invalid request: %v", err)))
 		return
 	}
 
-	tx, err := h.postgresPool.Begin(r.Context())
-	if err != nil {
-		h.log.Error("failed to start transaction", "error", err)
+	if err := h.createMessage(r.Context(), req); err != nil {
+		h.log.Error("failed to create message", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("internal server error"))
 		return
 	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *handler) createMessage(ctx context.Context, req createMessageRequest) error {
+	tx, err := h.postgresPool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer func(tx pgx.Tx) {
+		_ = tx.Rollback(ctx)
+	}(tx)
+
+	// Insert into message_infos just to have a need for the transactional outbox pattern.
 
 	_, err = tx.Exec(
-		r.Context(),
+		ctx,
 		`INSERT INTO message_infos (value_length) VALUES ($1)`,
 		len(req.Value),
 	)
 	if err != nil {
-		h.log.Error("failed to insert message_info", "error", err)
-		_ = tx.Rollback(r.Context())
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return fmt.Errorf("failed to insert into message_infos: %w", err)
 	}
+
+	// Insert outbox_messages to have a message to send to Kafka by the worker.
 
 	headersJSON, err := json.Marshal(req.Headers)
 	if err != nil {
-		h.log.Error("failed to marshal headers", "error", err)
-		_ = tx.Rollback(r.Context())
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return fmt.Errorf("failed to marshal headers: %w", err)
 	}
 
 	_, err = tx.Exec(
-		r.Context(),
+		ctx,
 		`INSERT INTO outbox_messages (status, topic, key, value, headers) VALUES ($1, $2, $3, $4, $5)`,
 		outbox.StatusUndelivered,
 		req.Topic,
@@ -91,27 +123,29 @@ func (h *handler) handleCreateMessage(w http.ResponseWriter, r *http.Request) {
 		headersJSON,
 	)
 	if err != nil {
-		h.log.Error("failed to insert outbox_message", "error", err)
-		_ = tx.Rollback(r.Context())
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return fmt.Errorf("failed to insert into outbox_messages: %w", err)
 	}
 
-	if err = tx.Commit(r.Context()); err != nil {
-		h.log.Error("failed to commit transaction", "error", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
-
-	w.WriteHeader(http.StatusOK)
+	return nil
 }
 
 type getStatisticsResponse struct {
-	Count int `json:"count"`
+	CountInMessageInfos              int `json:"count_in_message_infos"`
+	UndeliveredCountInOutboxMessages int `json:"undelivered_count_in_outbox_messages"`
+	DeliveredCountInOutboxMessages   int `json:"delivered_count_in_outbox_messages"`
 }
 
-func (h *handler) handleGetStatistics(w http.ResponseWriter, _ *http.Request) {
-	resp := getStatisticsResponse{Count: 0}
+func (h *handler) handleGetStatistics(w http.ResponseWriter, r *http.Request) {
+	resp, err := h.getStatistics(r.Context())
+	if err != nil {
+		h.log.Error("failed to get statistics", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("internal server error"))
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -119,4 +153,37 @@ func (h *handler) handleGetStatistics(w http.ResponseWriter, _ *http.Request) {
 		h.log.Error("failed to encode response", "error", err)
 		return
 	}
+}
+
+func (h *handler) getStatistics(ctx context.Context) (*getStatisticsResponse, error) {
+	result, err := h.postgresPool.Query(
+		ctx,
+		`
+			SELECT
+				(SELECT COUNT(*) FROM message_infos) AS count_in_message_infos,
+				(SELECT COUNT(*) FROM outbox_messages WHERE status = $1) AS undelivered_count_in_outbox_messages,
+				(SELECT COUNT(*) FROM outbox_messages WHERE status = $2) AS delivered_count_in_outbox_messages
+		`,
+		outbox.StatusUndelivered,
+		outbox.StatusDelivered,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query statistics: %w", err)
+	}
+
+	type row struct {
+		CountInMessageInfos              int `db:"count_in_message_infos"`
+		UndeliveredCountInOutboxMessages int `db:"undelivered_count_in_outbox_messages"`
+		DeliveredCountInOutboxMessages   int `db:"delivered_count_in_outbox_messages"`
+	}
+	r, err := pgx.CollectExactlyOneRow(result, pgx.RowToStructByName[row])
+	if err != nil {
+		return nil, fmt.Errorf("failed to collect row: %w", err)
+	}
+
+	return &getStatisticsResponse{
+		CountInMessageInfos:              r.CountInMessageInfos,
+		UndeliveredCountInOutboxMessages: r.UndeliveredCountInOutboxMessages,
+		DeliveredCountInOutboxMessages:   r.DeliveredCountInOutboxMessages,
+	}, nil
 }
