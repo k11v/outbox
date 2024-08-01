@@ -149,7 +149,7 @@ func (h *handler) handleGetStatistics(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
+	if err = json.NewEncoder(w).Encode(resp); err != nil {
 		h.log.Error("failed to encode response", "error", err)
 		return
 	}
