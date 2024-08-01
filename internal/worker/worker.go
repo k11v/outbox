@@ -13,6 +13,8 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+// Worker is a worker that sends messages from the outbox to Kafka.
+// It should be created with NewWorker.
 type Worker struct {
 	cfg          Config
 	log          *slog.Logger
@@ -20,6 +22,7 @@ type Worker struct {
 	postgresPool *pgxpool.Pool
 }
 
+// NewWorker creates a new Worker.
 func NewWorker(cfg Config, log *slog.Logger, kafkaWriter *kafka.Writer, postgresPool *pgxpool.Pool) *Worker {
 	return &Worker{
 		cfg:          cfg,
@@ -29,8 +32,12 @@ func NewWorker(cfg Config, log *slog.Logger, kafkaWriter *kafka.Writer, postgres
 	}
 }
 
+// Run runs the worker.
+// It sends messages from the outbox to Kafka in batches every interval.
+// It stops when done is closed.
 func (w *Worker) Run(done <-chan struct{}) {
 	ticker := time.NewTicker(w.cfg.interval())
+	defer ticker.Stop()
 
 	for {
 		func() {
@@ -53,7 +60,7 @@ func (w *Worker) Run(done <-chan struct{}) {
 		select {
 		case <-ticker.C:
 		case <-done:
-			break
+			return
 		}
 	}
 }

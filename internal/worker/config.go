@@ -4,6 +4,8 @@ import (
 	"time"
 )
 
+// Config holds the worker configuration.
+// The zero value is a valid configuration.
 type Config struct {
 	BatchSize int           `env:"BATCH_SIZE"` // default: 100
 	Interval  time.Duration `env:"INTERVAL"`   // default: 1s

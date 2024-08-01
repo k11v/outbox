@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/k11v/outbox/internal/kafkautil"
 	"github.com/k11v/outbox/internal/postgresutil"
@@ -41,14 +42,13 @@ func run(stdout io.Writer, environ []string) error {
 
 	w := worker.NewWorker(cfg.Worker, log, kafkaWriter, postgresPool)
 
-	var done chan struct{}
+	done := make(chan struct{})
 	go func() {
-		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt)
-		<-sigint
-		log.Info("interrupted")
-
-		done <- struct{}{}
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+		<-sig
+		log.Info("shutting down")
+		close(done)
 	}()
 
 	log.Info(
