@@ -63,9 +63,6 @@ func (r *createMessageRequest) validate() error {
 	return nil
 }
 
-// handleCreateMessage implements all crucial parts of the outbox pattern. This
-// function will later be split up to only store the message in Postgres and
-// have a worker that reads from Postgres and sends to Kafka.
 func (h *handler) handleCreateMessage(w http.ResponseWriter, r *http.Request) {
 	var req createMessageRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -136,11 +133,19 @@ func (h *handler) createMessage(ctx context.Context, req createMessageRequest) e
 }
 
 type getStatisticsResponse struct {
-	Count int `json:"count"`
+	CountInMessageInfos              int `json:"count_in_message_infos"`
+	UndeliveredCountInOutboxMessages int `json:"undelivered_count_in_outbox_messages"`
+	DeliveredCountInOutboxMessages   int `json:"delivered_count_in_outbox_messages"`
 }
 
-func (h *handler) handleGetStatistics(w http.ResponseWriter, _ *http.Request) {
-	resp := getStatisticsResponse{Count: 0}
+func (h *handler) handleGetStatistics(w http.ResponseWriter, r *http.Request) {
+	resp, err := h.getStatistics(r.Context())
+	if err != nil {
+		h.log.Error("failed to get statistics", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("internal server error"))
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -148,4 +153,37 @@ func (h *handler) handleGetStatistics(w http.ResponseWriter, _ *http.Request) {
 		h.log.Error("failed to encode response", "error", err)
 		return
 	}
+}
+
+func (h *handler) getStatistics(ctx context.Context) (*getStatisticsResponse, error) {
+	result, err := h.postgresPool.Query(
+		ctx,
+		`
+			SELECT
+				(SELECT COUNT(*) FROM message_infos) AS count_in_message_infos,
+				(SELECT COUNT(*) FROM outbox_messages WHERE status = $1) AS undelivered_count_in_outbox_messages,
+				(SELECT COUNT(*) FROM outbox_messages WHERE status = $2) AS delivered_count_in_outbox_messages
+		`,
+		outbox.StatusUndelivered,
+		outbox.StatusDelivered,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query statistics: %w", err)
+	}
+
+	type row struct {
+		CountInMessageInfos              int `db:"count_in_message_infos"`
+		UndeliveredCountInOutboxMessages int `db:"undelivered_count_in_outbox_messages"`
+		DeliveredCountInOutboxMessages   int `db:"delivered_count_in_outbox_messages"`
+	}
+	r, err := pgx.CollectExactlyOneRow(result, pgx.RowToStructByName[row])
+	if err != nil {
+		return nil, fmt.Errorf("failed to collect row: %w", err)
+	}
+
+	return &getStatisticsResponse{
+		CountInMessageInfos:              r.CountInMessageInfos,
+		UndeliveredCountInOutboxMessages: r.UndeliveredCountInOutboxMessages,
+		DeliveredCountInOutboxMessages:   r.DeliveredCountInOutboxMessages,
+	}, nil
 }
