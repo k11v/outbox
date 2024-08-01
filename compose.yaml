@@ -21,6 +21,19 @@ services:
       interval: 3s
       timeout: 30s
       retries: 10
+  worker:
+    build: .
+    entrypoint: ["worker"]
+    env_file:
+      - example.env
+    environment:
+      - OUTBOX_KAFKA_BROKERS=kafka:9092
+      - OUTBOX_POSTGRES_DSN=postgres://postgres:postgres@postgres:5432/postgres
+    depends_on:
+      postgres-up:
+        condition: service_completed_successfully
+      kafka-up:
+        condition: service_completed_successfully
   postgres-up:
     build: .
     entrypoint: ["postgres-up"]
