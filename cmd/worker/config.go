@@ -1,11 +1,10 @@
 package main
 
 import (
-	"time"
-
 	"github.com/caarlos0/env/v11"
 	"github.com/k11v/outbox/internal/kafkautil"
 	"github.com/k11v/outbox/internal/postgresutil"
+	"github.com/k11v/outbox/internal/worker"
 )
 
 // config holds the application configuration.
@@ -13,28 +12,7 @@ type config struct {
 	Development bool                `env:"OUTBOX_DEVELOPMENT"`
 	Kafka       kafkautil.Config    `envPrefix:"OUTBOX_KAFKA_"`
 	Postgres    postgresutil.Config `envPrefix:"OUTBOX_POSTGRES_"`
-	Worker      workerConfig        `envPrefix:"OUTBOX_WORKER_"`
-}
-
-type workerConfig struct {
-	BatchSize int           `env:"BATCH_SIZE"` // default: 100
-	Interval  time.Duration `env:"INTERVAL"`   // default: 1s
-}
-
-func (c workerConfig) batchSize() int {
-	s := c.BatchSize
-	if s == 0 {
-		s = 100
-	}
-	return s
-}
-
-func (c workerConfig) interval() time.Duration {
-	i := c.Interval
-	if i == 0 {
-		i = time.Second
-	}
-	return i
+	Worker      worker.Config       `envPrefix:"OUTBOX_WORKER_"`
 }
 
 // parseConfig parses the application configuration from the environment variables.

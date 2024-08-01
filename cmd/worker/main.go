@@ -55,7 +55,7 @@ func run(stdout io.Writer, environ []string) error {
 		postgresPool: postgresPool,
 	}
 
-	ticker := time.NewTicker(cfg.Worker.interval())
+	ticker := time.NewTicker(cfg.Worker.IntervalReal())
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt)
@@ -92,7 +92,7 @@ func run(stdout io.Writer, environ []string) error {
 			LIMIT $2
 		`,
 			outbox.StatusUndelivered,
-			cfg.Worker.batchSize(),
+			cfg.Worker.BatchSizeReal(),
 		)
 		if workErr != nil {
 			w.log.Error("failed to query outbox_messages", "error", err)
