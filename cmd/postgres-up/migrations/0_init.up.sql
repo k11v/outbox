@@ -7,11 +7,13 @@ CREATE TABLE IF NOT EXISTS outbox_messages (
     created_at timestamp with time zone DEFAULT now(),
     status text NOT NULL,
 
-    -- Message
+    -- Message.
+    -- For simplicity, we're assuming that all keys and values are strings.
+    -- In a real-world scenario, you might want to use bytea or base64.
     topic text NOT NULL,
-    key bytea NOT NULL,
-    value bytea NOT NULL,
-    headers jsonb NOT NULL, -- e.g. [{"key": "Content-Type", "value_base64": "YXBwbGljYXRpb24vanNvbg=="}]
+    key text NOT NULL,
+    value text NOT NULL,
+    headers jsonb NOT NULL, -- e.g. [{"key": "Content-Type", "value": "application/json"}]
 
     PRIMARY KEY (id),
     CHECK (status IN ('pending', 'failed', 'succeeded'))
