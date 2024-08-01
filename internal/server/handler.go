@@ -52,7 +52,54 @@ func (h *handler) handleCreateMessage(w http.ResponseWriter, r *http.Request) {
 
 	// Store in Postgres.
 
-	// TODO.
+	tx, err := h.postgresPool.Begin(r.Context())
+	if err != nil {
+		h.log.Error("failed to start transaction", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	_, err = tx.Exec(
+		r.Context(),
+		`INSERT INTO message_infos (value_length) VALUES ($1)`,
+		len(req.Value),
+	)
+	if err != nil {
+		h.log.Error("failed to insert message_info", "error", err)
+		_ = tx.Rollback(r.Context())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	headersJSON, err := json.Marshal(req.Headers)
+	if err != nil {
+		h.log.Error("failed to marshal headers", "error", err)
+		_ = tx.Rollback(r.Context())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	_, err = tx.Exec(
+		r.Context(),
+		`INSERT INTO outbox_messages (status, topic, key, value, headers) VALUES ($1, $2, $3, $4, $5)`,
+		"pending", // TODO: Use a constant.
+		req.Topic,
+		req.Key,
+		req.Value,
+		headersJSON,
+	)
+	if err != nil {
+		h.log.Error("failed to insert outbox_message", "error", err)
+		_ = tx.Rollback(r.Context())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if err = tx.Commit(r.Context()); err != nil {
+		h.log.Error("failed to commit transaction", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	// Send to Kafka.
 
