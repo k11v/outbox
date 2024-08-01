@@ -2,21 +2,13 @@ package server
 
 import (
 	"encoding/json"
-	"errors"
 	"log/slog"
 	"net/http"
 
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
+	"github.com/k11v/outbox/internal/outbox"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/segmentio/kafka-go"
-)
-
-const (
-	batchSize                      = 100
-	outboxMessageStatusUndelivered = "undelivered"
-	outboxMessageStatusDelivered   = "delivered"
 )
 
 type handler struct {
@@ -62,8 +54,6 @@ func (h *handler) handleCreateMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Store in Postgres.
-
 	tx, err := h.postgresPool.Begin(r.Context())
 	if err != nil {
 		h.log.Error("failed to start transaction", "error", err)
@@ -94,7 +84,7 @@ func (h *handler) handleCreateMessage(w http.ResponseWriter, r *http.Request) {
 	_, err = tx.Exec(
 		r.Context(),
 		`INSERT INTO outbox_messages (status, topic, key, value, headers) VALUES ($1, $2, $3, $4, $5)`,
-		outboxMessageStatusUndelivered,
+		outbox.StatusUndelivered,
 		req.Topic,
 		req.Key,
 		req.Value,
@@ -109,93 +99,6 @@ func (h *handler) handleCreateMessage(w http.ResponseWriter, r *http.Request) {
 
 	if err = tx.Commit(r.Context()); err != nil {
 		h.log.Error("failed to commit transaction", "error", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	// Retrieve from Postgres.
-
-	type row struct {
-		ID      uuid.UUID `json:"id"`
-		Topic   string    `json:"topic"`
-		Key     string    `json:"key"`
-		Value   string    `json:"value"`
-		Headers []struct {
-			Key   string `json:"key"`
-			Value string `json:"value"`
-		}
-	}
-
-	result, err := h.postgresPool.Query(
-		r.Context(),
-		`
-			SELECT id, topic, key, value, headers::jsonb
-			FROM outbox_messages
-			WHERE status = $1
-			ORDER BY created_at, id
-			LIMIT $2
-		`,
-		outboxMessageStatusUndelivered,
-		batchSize,
-	)
-	if err != nil {
-		h.log.Error("failed to query outbox_messages", "error", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	rows, err := pgx.CollectRows(result, pgx.RowToStructByName[row])
-	if err != nil {
-		h.log.Error("failed to collect rows", "error", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	// Send to Kafka.
-
-	var messages []kafka.Message
-	for _, mr := range rows {
-		headers := make([]kafka.Header, len(mr.Headers))
-		for i, header := range mr.Headers {
-			headers[i] = kafka.Header{
-				Key:   header.Key,
-				Value: []byte(header.Value),
-			}
-		}
-		m := kafka.Message{
-			Topic:   mr.Topic,
-			Key:     []byte(mr.Key),
-			Value:   []byte(mr.Value),
-			Headers: headers,
-		}
-		messages = append(messages, m)
-	}
-
-	if err = h.kafkaWriter.WriteMessages(r.Context(), messages...); err != nil {
-		h.log.Error("failed to write message", "error", err)
-		if errors.Is(err, kafka.UnknownTopicOrPartition) {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	// Update in Postgres.
-
-	var ids []uuid.UUID
-	for _, mr := range rows {
-		ids = append(ids, mr.ID)
-	}
-
-	_, err = h.postgresPool.Exec(
-		r.Context(),
-		`UPDATE outbox_messages SET status = $1 WHERE id = ANY($2)`,
-		outboxMessageStatusDelivered,
-		ids,
-	)
-	if err != nil {
-		h.log.Error("failed to update outbox_messages", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
