@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS outbox_messages (
     headers jsonb NOT NULL, -- e.g. [{"key": "Content-Type", "value": "application/json"}]
 
     PRIMARY KEY (id),
-    CHECK (status IN ('pending', 'failed', 'succeeded'))
+    CHECK (status IN ('undelivered', 'delivered'))
 );
 
 COMMIT;
