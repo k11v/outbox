@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -28,7 +29,36 @@ func NewWorker(cfg Config, log *slog.Logger, kafkaWriter *kafka.Writer, postgres
 	}
 }
 
-func (w *Worker) SendMessages(ctx context.Context) (int, error) {
+func (w *Worker) Run(done <-chan struct{}) {
+	ticker := time.NewTicker(w.cfg.interval())
+
+	for {
+		func() {
+			ctx, cancel := context.WithTimeout(context.Background(), w.cfg.timeout())
+			defer cancel()
+
+			count, err := w.sendMessages(ctx)
+			if err != nil {
+				w.log.Error("failed to send messages", "error", err)
+				return
+			}
+
+			if count > 0 {
+				w.log.Info("sent messages", "count", count)
+			} else {
+				w.log.Debug("sent no messages")
+			}
+		}()
+
+		select {
+		case <-ticker.C:
+		case <-done:
+			break
+		}
+	}
+}
+
+func (w *Worker) sendMessages(ctx context.Context) (int, error) {
 	// Get undelivered messages.
 
 	result, err := w.postgresPool.Query(
@@ -41,7 +71,7 @@ func (w *Worker) SendMessages(ctx context.Context) (int, error) {
 			LIMIT $2
 		`,
 		outbox.StatusUndelivered,
-		w.cfg.BatchSizeReal(),
+		w.cfg.batchSize(),
 	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to query outbox_messages: %w", err)

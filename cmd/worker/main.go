@@ -7,12 +7,10 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
-	"time"
-
-	"github.com/k11v/outbox/internal/worker"
 
 	"github.com/k11v/outbox/internal/kafkautil"
 	"github.com/k11v/outbox/internal/postgresutil"
+	"github.com/k11v/outbox/internal/worker"
 )
 
 func main() {
@@ -43,36 +41,23 @@ func run(stdout io.Writer, environ []string) error {
 
 	w := worker.NewWorker(cfg.Worker, log, kafkaWriter, postgresPool)
 
-	ticker := time.NewTicker(cfg.Worker.IntervalReal())
+	var done chan struct{}
+	go func() {
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt)
+		<-sigint
+		log.Info("interrupted")
 
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, os.Interrupt)
+		done <- struct{}{}
+	}()
 
 	log.Info(
 		"starting worker",
 		"development", cfg.Development,
 	)
+	w.Run(done)
 
-	for {
-		workCtx := context.Background()
-
-		sendCount, sendErr := w.SendMessages(workCtx)
-		if sendErr != nil {
-			log.Error("failed to send messages", "error", sendErr)
-		} else {
-			if sendCount > 0 {
-				log.Info("sent messages", "count", sendCount)
-			} else {
-				log.Debug("sent no messages")
-			}
-		}
-
-		select {
-		case <-ticker.C:
-		case <-done:
-			return nil
-		}
-	}
+	return nil
 }
 
 func closeWithLog(c io.Closer, log *slog.Logger) {
