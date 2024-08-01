@@ -50,6 +50,12 @@ func (h *handler) handleCreateMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Store in Postgres.
+
+	// TODO.
+
+	// Send to Kafka.
+
 	headers := make([]kafka.Header, len(req.Headers))
 	for i, header := range req.Headers {
 		headers[i] = kafka.Header{
